@@ -1,11 +1,20 @@
+function cleanEnv(value) {
+  return (value || "").trim().replace(/^['\"]|['\"]$/g, "");
+}
+
 export async function GET() {
   const state = crypto.randomUUID();
+  const clientKey = cleanEnv(process.env.TIKTOK_CLIENT_KEY);
+
+  if (!clientKey) {
+    return new Response("TikTok client key is not configured.", { status: 500 });
+  }
 
   const redirectUri =
     "https://mirza-content-empire.vercel.app/callback.html";
 
   const params = new URLSearchParams({
-    client_key: process.env.TIKTOK_CLIENT_KEY,
+    client_key: clientKey,
     response_type: "code",
     scope: "user.info.basic,video.upload,video.publish",
     redirect_uri: redirectUri,

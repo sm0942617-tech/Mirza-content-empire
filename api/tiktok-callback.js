@@ -1,3 +1,7 @@
+function cleanEnv(value) {
+  return (value || "").trim().replace(/^['\"]|['\"]$/g, "");
+}
+
 function getCookie(request, name) {
   const cookieHeader = request.headers.get("cookie") || "";
   const cookies = cookieHeader.split(";").map((part) => part.trim());
@@ -30,10 +34,20 @@ export async function POST(request) {
       );
     }
 
+    const clientKey = cleanEnv(process.env.TIKTOK_CLIENT_KEY);
+    const clientSecret = cleanEnv(process.env.TIKTOK_CLIENT_SECRET);
+
+    if (!clientKey || !clientSecret) {
+      return Response.json(
+        { success: false, error: "TikTok client credentials are not configured in Vercel." },
+        { status: 500 }
+      );
+    }
+
     const body = new URLSearchParams({
-      client_key: process.env.TIKTOK_CLIENT_KEY,
-      client_secret: process.env.TIKTOK_CLIENT_SECRET,
-      code,
+      client_key: clientKey,
+      client_secret: clientSecret,
+      code: decodeURIComponent(code),
       grant_type: "authorization_code",
       redirect_uri: "https://mirza-content-empire.vercel.app/callback.html",
     });
@@ -44,6 +58,7 @@ export async function POST(request) {
         method: "POST",
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
+          "Cache-Control": "no-cache",
         },
         body,
       }
@@ -55,7 +70,9 @@ export async function POST(request) {
       return Response.json(
         {
           success: false,
-          error: data.error || data.error_description || "TikTok token exchange failed.",
+          error: data.error || "TikTok token exchange failed.",
+          description: data.error_description || null,
+          log_id: data.log_id || null,
         },
         { status: 400 }
       );

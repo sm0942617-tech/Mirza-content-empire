@@ -3,11 +3,77 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mirza OS | TikTok Connected</title>
+  <title>Mirza Content Empire | TikTok Connection</title>
+  <style>
+    :root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+    * { box-sizing: border-box; }
+    body { margin:0; min-height:100vh; display:grid; place-items:center; background:#050505; color:#f7f7f7; }
+    .card { width:min(620px,92vw); padding:42px; border:1px solid #292929; border-radius:24px; background:#0d0d0d; box-shadow:0 24px 80px rgba(0,0,0,.45); }
+    .eyebrow { color:#ff315c; font-size:12px; letter-spacing:.18em; text-transform:uppercase; }
+    h1 { margin:12px 0; font-size:34px; }
+    p { color:#b8b8b8; line-height:1.6; }
+    .status { margin:26px 0; padding:18px; border-radius:14px; background:#151515; border:1px solid #292929; }
+    a { display:inline-block; margin-top:8px; padding:13px 18px; border-radius:12px; background:#fff; color:#050505; text-decoration:none; font-weight:700; }
+  </style>
 </head>
 <body>
-  <h1>Mirza OS Content Empire</h1>
-  <p>TikTok authorization complete.</p>
-  <p>You can return to Mirza OS.</p>
+  <main class="card">
+    <div class="eyebrow">TikTok Login Kit</div>
+    <h1 id="title">Connecting TikTok…</h1>
+    <p id="copy">Mirza Content Empire is securely completing the authorization request.</p>
+    <div class="status" id="status">Checking authorization response…</div>
+    <a id="returnLink" href="/" hidden>Return to Content Empire</a>
+  </main>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("code");
+    const state = params.get("state");
+    const oauthError = params.get("error");
+    const status = document.getElementById("status");
+    const title = document.getElementById("title");
+    const copy = document.getElementById("copy");
+    const returnLink = document.getElementById("returnLink");
+
+    async function finishConnection() {
+      if (oauthError) {
+        title.textContent = "TikTok connection cancelled";
+        copy.textContent = "TikTok did not authorize the connection.";
+        status.textContent = params.get("error_description") || oauthError;
+        returnLink.hidden = false;
+        return;
+      }
+
+      if (!code || !state) {
+        title.textContent = "TikTok connection incomplete";
+        copy.textContent = "The authorization response did not include the required details.";
+        status.textContent = "Please return and select Connect TikTok again.";
+        returnLink.hidden = false;
+        return;
+      }
+
+      try {
+        const response = await fetch("/api/tiktok-callback", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code, state }),
+        });
+        const data = await response.json();
+        if (!response.ok || !data.success) throw new Error(data.error || "Connection failed.");
+
+        title.textContent = "TikTok connected";
+        copy.textContent = "Authorization is complete. The account is ready for the Content Posting demo.";
+        status.textContent = data.scope ? `Authorized scopes: ${data.scope}` : "TikTok account authorized successfully.";
+        returnLink.hidden = false;
+        returnLink.href = "/?tiktok=connected";
+      } catch (error) {
+        title.textContent = "Could not connect TikTok";
+        copy.textContent = "The authorization response was received, but the secure token exchange did not complete.";
+        status.textContent = error.message;
+        returnLink.hidden = false;
+      }
+    }
+
+    finishConnection();
+  </script>
 </body>
 </html>
